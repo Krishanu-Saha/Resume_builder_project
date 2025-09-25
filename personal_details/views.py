@@ -1,63 +1,53 @@
-# personal_details/views.py
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
 from .models import PersonalDetails
 from .serializers import PersonalDetailsSerializer
+from accountapp.authentication import JWTAuthentication
+from accountapp.permissions import IsResumeOwnerOrAdmin
+from rest_framework.permissions import IsAuthenticated
 from resume.models import Resume
 
 
-@api_view(['GET', 'POST', 'PUT', 'DELETE'])
-def personal_details_crud(request, resume_id):
+@api_view(['GET', 'POST', 'PUT', 'PATCH'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])  # ✅ support file uploads
+def personal_details_manage(request, resume_id):
     """
-    A single CRUD endpoint for handling PersonalDetails
-    linked to a Resume. 
-    - GET: Retrieve details
-    - POST: Create details (if not already created)
-    - PUT: Update details
-    - DELETE: Remove details
+    Get, create, or update personal details for a resume.
+    Only the owner or admin can access.
     """
     resume = get_object_or_404(Resume, id=resume_id)
 
-    try:
-        personal_details = PersonalDetails.objects.get(resume=resume)
-    except PersonalDetails.DoesNotExist:
-        personal_details = None
+    # Ownership/admin check
+    if resume.user != request.user and request.user.role != 'admin':
+        return Response({'detail': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Try to fetch existing personal details
+    personal_details = getattr(resume, 'personal_details', None)
 
     if request.method == 'GET':
-        if personal_details is None:
-            return Response({"detail": "No personal details found."}, status=status.HTTP_404_NOT_FOUND)
+        if not personal_details:
+            return Response({'detail': 'No personal details found.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = PersonalDetailsSerializer(personal_details)
         return Response(serializer.data)
 
-    elif request.method == 'POST':
-        if personal_details is not None:
-            return Response({"detail": "Personal details already exist. Use PUT to update."}, status=status.HTTP_400_BAD_REQUEST)
+    if request.method in ['POST', 'PUT', 'PATCH']:
+        if personal_details:
+            serializer = PersonalDetailsSerializer(
+                personal_details,
+                data=request.data,
+                partial=(request.method=='PATCH'),
+                context={'request': request}
+            )
+        else:
+            serializer = PersonalDetailsSerializer(data=request.data, context={'request': request})
 
-        data = request.data.copy()
-        data["resume"] = resume.id
-        serializer = PersonalDetailsSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'PUT':
-        if personal_details is None:
-            return Response({"detail": "No personal details found to update. Use POST first."}, status=status.HTTP_404_NOT_FOUND)
-
-        data = request.data.copy()
-        data["resume"] = resume.id
-        serializer = PersonalDetailsSerializer(personal_details, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
+            serializer.save(resume=resume)  # enforce resume association
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        if personal_details is None:
-            return Response({"detail": "No personal details found to delete."}, status=status.HTTP_404_NOT_FOUND)
-        personal_details.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)

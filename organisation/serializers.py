@@ -6,12 +6,12 @@ class OrganisationSerializer(serializers.ModelSerializer):
         model = Organisation
         fields = [
             'id',
-            'resume',  # show which resume this belongs to
             'name',
             'position',
             'start_date',
             'end_date',
             'location',
-            'description'
+            'description',
+            'resume',  # still returned in GETs
         ]
-        read_only_fields = ['resume']  # set from URL
+        read_only_fields = ['resume']  # will be set in views

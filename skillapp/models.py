@@ -10,13 +10,21 @@ class Skill(models.Model):
         ('Expert', 'Expert'),
     ]
 
-    resume = models.ForeignKey(Resume, related_name="skills", on_delete=models.CASCADE)
+    resume = models.ForeignKey(
+        Resume, 
+        related_name="skills",  # allows resume.skills.all()
+        on_delete=models.CASCADE
+    )
     skill = models.CharField(max_length=100)
     info = models.TextField(blank=True, null=True)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
 
+    created_at = models.DateTimeField(auto_now_add=True)  # optional: track when skill was added
+    updated_at = models.DateTimeField(auto_now=True)      # optional: track updates
+
     def __str__(self):
         return f"{self.skill} ({self.level})"
+
 
 
 # Create your models here.

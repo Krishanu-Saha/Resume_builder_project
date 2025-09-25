@@ -5,3 +5,4 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = ['id', 'resume', 'name', 'additional_info', 'link']
+        read_only_fields = ['id', 'resume']

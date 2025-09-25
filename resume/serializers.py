@@ -9,7 +9,7 @@ from skillapp.serializers import SkillSerializer
 from templateapp.models import ResumeTemplate
 from certificateapp.serializers import CertificateSerializer
 from courseapp.serializers import CourseSerializer
-from interestapp.serializers import InterestSerializer# ✅ import your serializer
+from interestapp.serializers import InterestSerializer
 
 
 class ResumeSerializer(serializers.ModelSerializer):
@@ -17,10 +17,10 @@ class ResumeSerializer(serializers.ModelSerializer):
     organisations = OrganisationSerializer(many=True, read_only=True)
     projects = ProjectSerializer(many=True, read_only=True)
     educations = EducationSerializer(many=True, read_only=True)
-    skills = SkillSerializer(many= True,read_only=True)
-    certificates = CertificateSerializer(many= True,read_only=True)
-    courses = CourseSerializer(many= True,read_only=True)
-    interests = InterestSerializer(many= True,read_only=True)
+    skills = SkillSerializer(many=True, read_only=True)
+    certificates = CertificateSerializer(many=True, read_only=True)
+    courses = CourseSerializer(many=True, read_only=True)
+    interests = InterestSerializer(many=True, read_only=True)
 
     # Read-only nested template serializer
     template = ResumeTemplateSerializer(read_only=True)
@@ -31,10 +31,25 @@ class ResumeSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    # Show user email (read-only)
+    user = serializers.StringRelatedField(read_only=True)
+
     class Meta:
         model = Resume
         fields = [
             'id', 'title',
+            'user',                     # ✅ added user field
             'template', 'template_id',  # ✅ include both
-            'personal_details', 'organisations', 'projects', 'educations','skills','certificates','courses','interests'
+            'personal_details', 'organisations', 'projects',
+            'educations', 'skills', 'certificates',
+            'courses', 'interests'
         ]
+
+    def create(self, validated_data):
+        """
+        Ensure the logged-in user is automatically set as the resume owner.
+        """
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            validated_data["user"] = request.user
+        return super().create(validated_data)

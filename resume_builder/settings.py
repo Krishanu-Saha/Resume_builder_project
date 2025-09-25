@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-x$y*9&x4td5+pe_-2=($7iqd&2e%a3+wm%u=*1i)t)(y0v2&t9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     
     #Custom apps
     'resume.apps.ResumeConfig',
+    "corsheaders",
     'rest_framework',
     'personal_details.apps.PersonalDetailsConfig',
     'organisation.apps.OrganisationConfig',
@@ -51,6 +52,8 @@ INSTALLED_APPS = [
     'certificateapp.apps.CertificateappConfig',
     'interestapp.apps.InterestappConfig',
     'courseapp.apps.CourseappConfig',
+    'accountapp.apps.AccountappConfig',
+    
     
     
     
@@ -132,8 +135,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -141,3 +145,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'accountapp.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'accountapp.authentication.JWTAuthentication',
+    ],
+
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated'
+    ]
+}
+
+# settings.py
+ADMIN_REGISTER_SECRET = "#Abcdsep25"
+
