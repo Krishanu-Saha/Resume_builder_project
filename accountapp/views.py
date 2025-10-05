@@ -7,9 +7,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
+from rest_framework import status
 
 from django.utils import timezone
 from datetime import timedelta
+from django.shortcuts import get_object_or_404
 
 from accountapp.authentication import JWTAuthentication, create_access_token, create_refresh_token
 from accountapp.models import  User, UserToken
@@ -114,10 +116,7 @@ class UserAPIView(APIView):
         serializer = UserSerializer(user)
         return Response({
             'user': serializer.data,
-            'role': user.role,
-            'is_professor': user.role == 'professor',
-            'is_student': user.role == 'student',
-            'is_admin': user.role == 'admin'            
+            'role': user.role          
         })
 
 # Logout User    
@@ -140,5 +139,41 @@ class LogoutAPIView(APIView):
 
         response.delete_cookie(key='refresh_token')
         return response
+    
+class UserListAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
+    def get(self, request):
+        users = User.objects.all()
+        data = [
+            {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+                "is_subscribed": user.is_subscribed,
+                "is_active": user.is_active,
+                "date_joined": user.date_joined,
+            }
+            for user in users
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class UserDeleteAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def delete(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+
+        if user.role == User.ADMIN:
+            return Response({"detail": "Admins cannot delete other admins."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        user.delete()
+        return Response({"detail": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 

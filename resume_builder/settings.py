@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-x$y*9&x4td5+pe_-2=($7iqd&2e%a3+wm%u=*1i)t)(y0v2&t9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -53,13 +53,13 @@ INSTALLED_APPS = [
     'interestapp.apps.InterestappConfig',
     'courseapp.apps.CourseappConfig',
     'accountapp.apps.AccountappConfig',
-    
-    
-    
-    
-]
+    'profileapp.apps.ProfileappConfig',
+    'cltemplateapp.apps.CltemplateappConfig',
+    'coverletterapp.apps.CoverletterappConfig',
+    ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -74,7 +74,7 @@ ROOT_URLCONF = 'resume_builder.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR,"templates"), os.path.join(BASE_DIR, 'media')],
+        'DIRS': [os.path.join(BASE_DIR,"templates"), os.path.join(BASE_DIR, 'media/templates/html')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,8 +135,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -156,6 +157,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated'
     ]
 }
+CORS_ALLOW_ALL_ORIGINS = True
 
 # settings.py
 ADMIN_REGISTER_SECRET = "#Abcdsep25"

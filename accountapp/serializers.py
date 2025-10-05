@@ -11,14 +11,15 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'username', 'first_name', 'last_name',
-            'role', 'password', 'password_confirm'
+            'role', 'password', 'password_confirm',
+            'is_subscribed'   # ✅ added here
         ]
-        extra_kwargs = {                
+        extra_kwargs = {
             'password': {'write_only': True},
-            'role': {'read_only': True},# DRF will not include the password in any GET response.
+            'role': {'read_only': True},
+            'is_subscribed': {'read_only': True},  # ❌ users can’t change it themselves
         }
 
-    # Custom validation for email ending with a specific domain
     def validate_email(self, value):
         if not value.endswith('@gmail.com'):
             raise serializers.ValidationError("Only '@gmail.com' emails are allowed.")
@@ -46,12 +47,13 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('password_confirm')                  # password_confirm is not a field in the model
-        password = validated_data.pop('password')               # We cannot save password directly, it needs to be hashed
-        user = User(**validated_data)                           # Create a new User instance
-        user.set_password(password)                             # Hash the password        
-        user.save()                                             # Save the user instance     
+        validated_data.pop('password_confirm')
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
         return user
+
     
 
 class UserRegisterSerializer(UserSerializer):
@@ -59,8 +61,9 @@ class UserRegisterSerializer(UserSerializer):
 
     def create(self, validated_data):
         validated_data['role'] = User.RESUME_USER
+        validated_data['is_subscribed'] = False  # enforce default
         return super().create(validated_data)
-    
+
 class AdminRegisterSerializer(UserSerializer):
     """Serializer for admin users"""
     secret_key = serializers.CharField(write_only=True)
@@ -81,4 +84,6 @@ class AdminRegisterSerializer(UserSerializer):
 
     def create(self, validated_data):
         validated_data['role'] = User.ADMIN
+        validated_data['is_subscribed'] = True   # ✅ Admins are always subscribed
         return super().create(validated_data)
+

@@ -14,20 +14,31 @@ from accountapp.permissions import IsResumeOwner, IsResumeOwnerOrAdmin, IsAdmin 
 
 @api_view(['GET', 'POST'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])   # only authenticated users can list/create
+@permission_classes([IsAuthenticated])
 def resume_list_create(request):
     if request.method == 'GET':
-        # force ownership -> only fetch user’s resumes
+        # ✅ Only fetch resumes owned by this user
         resumes = Resume.objects.filter(user=request.user)
         serializer = ResumeSerializer(resumes, many=True, context={'request': request})
         return Response(serializer.data)
 
     if request.method == 'POST':
+        user = request.user
+
+        # ✅ Enforce subscription rule:
+        if not user.is_subscribed and user.resumes.count() >= 1:
+            return Response(
+                {"error": "You need a subscription to create more than one resume."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = ResumeSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(user=request.user)   # 👈 ownership enforced here
+            serializer.save(user=user)  # 👈 enforce ownership
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])

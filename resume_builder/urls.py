@@ -33,6 +33,9 @@ urlpatterns = [
     path('api/',include('interestapp.urls')),
     path('api/',include('courseapp.urls')),
     path('api/',include('accountapp.urls')),
+    path('api/',include('profileapp.urls')),
+    path("api/", include("cltemplateapp.urls")), 
+    path("api/", include("coverletterapp.urls")),
     
 ]
 
